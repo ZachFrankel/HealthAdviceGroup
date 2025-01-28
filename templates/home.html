@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+<div class="hero-section position-relative">
+    <img src="{{ url_for('static', filename='images/hero.png') }}" alt="Hero Image" class="w-100" style="height: 350px; object-fit: cover;">
+    
+    <div class="container position-absolute start-50 translate-middle-x" style="top: 10%">
+        <div class="p-4 mb-4 text-center mx-auto" style="background-color: #3DA18C; max-width: 600px;">
+            <h1 class="text-white fw-bold">Find information to help manage your health</h1>
+        </div>
+        
+        <div class="row justify-content-center" style="max-width: 600px; margin: 0 auto;">
+            <div class="col-md-6">
+                <div class="p-4 bg-white shadow" style="transform: translateY(5px);">
+                    <h3 class="fs-2">Register an account today for <strong><a href="auth/register" style="color: black; text-decoration: underline;">FREE</a></strong></h3>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-4 bg-white shadow" style="transform: translateY(5px);">
+                    <h3 class="fs-2">See weather updates in your area <strong><a href="weather" style="color: black; text-decoration: underline;">HERE</a></strong></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="py-5" style="background-color: rgba(217, 217, 217, 0.25);">
+    <div class="container">
+        <div class="bg-white shadow-lg rounded p-4" style="min-height: 300px;">
+            <!-- weather -->
+        </div>
+    </div>
+</div>
+{% endblock %}

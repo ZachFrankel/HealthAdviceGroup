@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Health Information{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4" style="color: #3DA18C;">Common Health Conditions & Prevention</h1>
+    
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+            <h2 class="h3 mb-0" style="color: #3DA18C;">Seasonal Allergies</h2>
+        </div>
+        <div class="card-body">
+            <h3 class="h5 mb-3">Common Symptoms:</h3>
+            <ul class="list-group list-group-flush mb-4">
+                <li class="list-group-item">Sneezing and nasal congestion</li>
+                <li class="list-group-item">Watery or itchy eyes</li>
+                <li class="list-group-item">Runny nose</li>
+                <li class="list-group-item">Itchy throat and ears</li>
+                <li class="list-group-item">Fatigue</li>
+            </ul>
+
+            <h3 class="h5 mb-3">Prevention Tips:</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h4 class="h6 mb-2" style="color: #3DA18C;">Indoor Prevention</h4>
+                            <ul class="mb-0">
+                                <li>Use air purifiers with HEPA filters</li>
+                                <li>Keep windows closed during high pollen times</li>
+                                <li>Regular house cleaning and dusting</li>
+                                <li>Wash bedding weekly in hot water</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h4 class="h6 mb-2" style="color: #3DA18C;">Outdoor Prevention</h4>
+                            <ul class="mb-0">
+                                <li>Check daily pollen forecasts</li>
+                                <li>Wear sunglasses outdoors</li>
+                                <li>Shower after outdoor activities</li>
+                                <li>Avoid peak pollen times (early morning)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Health Tips -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h2 class="h3 mb-0" style="color: #3DA18C;">General Health Tips</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5 mb-3" style="color: #3DA18C;">Stay Hydrated</h3>
+                            <ul class="mb-0">
+                                <li>Drink 8-10 glasses of water daily</li>
+                                <li>Monitor urine color</li>
+                                <li>Increase intake during exercise</li>
+                                <li>Carry a water bottle</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5 mb-3" style="color: #3DA18C;">Exercise Regularly</h3>
+                            <ul class="mb-0">
+                                <li>30 minutes daily activity</li>
+                                <li>Mix cardio and strength training</li>
+                                <li>Take regular breaks from sitting</li>
+                                <li>Stretch daily</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="h5 mb-3" style="color: #3DA18C;">Mental Wellness</h3>
+                            <ul class="mb-0">
+                                <li>Practice daily meditation</li>
+                                <li>Maintain social connections</li>
+                                <li>Get adequate sleep</li>
+                                <li>Manage stress levels</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

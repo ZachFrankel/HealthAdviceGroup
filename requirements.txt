@@ -1,0 +1,6 @@
+flask
+werkzeug
+sqlite3
+flask-discord
+python-dotenv
+requests

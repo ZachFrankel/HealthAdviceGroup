@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4" style="color: #3DA18C;">Weather Forecast</h1>
+    
+    <form method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="city" class="form-control" placeholder="Enter city name" required>
+            <button type="submit" class="btn" style="background-color: #3DA18C; color: white;">Search</button>
+        </div>
+    </form>
+
+    {% if weather_data %}
+    <div class="card mb-4" style="border-color: #3DA18C;">
+        <div class="card-body">
+            <h2 class="card-title" style="color: #3DA18C;">
+                {{ weather_data.city.name }}, {{ weather_data.city.country }}
+            </h2>
+            
+            {% for date, entries in weather_data.forecasts.items() %}
+            <div class="mb-4">
+                <h3 style="color: #3DA18C;">{{ date }}</h3>
+                <div class="row">
+                    {% for entry in entries %}
+                    <div class="col-md-2 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-subtitle mb-2 text-muted">
+                                    {{ entry.dt_txt.split(' ')[1][:5] }}
+                                </h5>
+                                <img src="http://openweathermap.org/img/wn/{{ entry.weather[0].icon }}@2x.png" 
+                                     alt="Weather icon" class="img-fluid">
+                                <p class="card-text">
+                                    {{ entry.main.temp|round(1) }}°C<br>
+                                    {{ entry.weather[0].description }}
+                                </p>
+                                <small class="text-muted">
+                                    Feels like {{ entry.main.feels_like|round(1) }}°C
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
