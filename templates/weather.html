@@ -25,12 +25,14 @@
                     {% for entry in entries %}
                     <div class="col-md-2 mb-3">
                         <div class="card h-100">
-                            <div class="card-body">
+                            <div class="card-body text-center">
                                 <h5 class="card-subtitle mb-2 text-muted">
                                     {{ entry.dt_txt.split(' ')[1][:5] }}
                                 </h5>
                                 <img src="http://openweathermap.org/img/wn/{{ entry.weather[0].icon }}@2x.png" 
-                                     alt="Weather icon" class="img-fluid">
+                                     alt="Weather icon" 
+                                     class="img-fluid mx-auto d-block"
+                                     style="width: 100px;">
                                 <p class="card-text">
                                     {{ entry.main.temp|round(1) }}°C<br>
                                     {{ entry.weather[0].description }}
