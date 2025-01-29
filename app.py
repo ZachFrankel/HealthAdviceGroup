@@ -5,6 +5,7 @@ import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from dotenv import load_dotenv
 from flask_discord import DiscordOAuth2Session, Unauthorized
+from datetime import datetime
 from auth import auth
 
 load_dotenv()
@@ -111,9 +112,61 @@ def weather():
     
     return render_template('weather.html', weather_data=weather_data)
 
-@app.route('/booking')
+@app.route('/booking', methods=['GET'])
 def booking():
-    return render_template('booking.html')
+    if 'user_id' in session:
+        db = get_db()
+        bookings = db.execute(
+            'SELECT * FROM bookings WHERE user_id = ? ORDER BY date DESC',
+            (session['user_id'],)
+        ).fetchall()
+        return render_template('booking.html', bookings=bookings)
+    return render_template('booking.html', bookings=None)
+
+@app.route('/create_booking', methods=['POST'])
+def create_booking():
+    if 'user_id' not in session:
+        flash('Please login to create a booking.', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    date = request.form.get('date')
+    address = request.form.get('address')
+    
+    if not date or not address:
+        flash('Please fill in all fields.', 'danger')
+        return redirect(url_for('booking'))
+    
+    try:
+        db = get_db()
+        db.execute(
+            'INSERT INTO bookings (user_id, date, address, created_at, status) VALUES (?, ?, ?, ?, ?)',
+            (session['user_id'], date, address, datetime.now(), 'pending')
+        )
+        db.commit()
+        flash('Booking created successfully!', 'success')
+    except sqlite3.Error as e:
+        flash('An error occurred while creating your booking.', 'danger')
+    
+    return redirect(url_for('booking'))
+
+@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
+def cancel_booking(booking_id):
+    if 'user_id' not in session:
+        flash('Please login to cancel a booking.', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    try:
+        db = get_db()
+        db.execute(
+            'UPDATE bookings SET status = ? WHERE id = ? AND user_id = ?',
+            ('cancelled', booking_id, session['user_id'])
+        )
+        db.commit()
+        flash('Booking cancelled successfully!', 'success')
+    except sqlite3.Error as e:
+        flash('An error occurred while cancelling your booking.', 'danger')
+    
+    return redirect(url_for('booking'))
 
 @app.route('/info')
 def info():
