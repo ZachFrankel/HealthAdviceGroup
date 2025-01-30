@@ -59,7 +59,48 @@ def redirect_unauthorized(e):
 def weather():
     weather_data = None
     
-    if request.method == 'POST':
+    if request.method == 'GET':
+        ipify_api_key = os.getenv('IPIFY_API_KEY')
+        try:
+            ip_response = requests.get(
+                f"https://geo.ipify.org/api/v2/country,city",
+                params={'apiKey': ipify_api_key}
+            )
+            
+            if ip_response.status_code == 200:
+                location_data = ip_response.json()
+                lat = location_data['location']['lat']
+                lon = location_data['location']['lng']
+                
+                weather_params = {
+                    'lat': lat,
+                    'lon': lon,
+                    'appid': OPENWEATHERMAP_API_KEY,
+                    'units': 'metric'
+                }
+                weather_response = requests.get(
+                    "http://api.openweathermap.org/data/2.5/forecast",
+                    params=weather_params
+                )
+                
+                if weather_response.status_code == 200:
+                    weather_data = weather_response.json()
+                    forecasts = {}
+                    for entry in weather_data['list']:
+                        date_obj = datetime.strptime(entry['dt_txt'].split(' ')[0], '%Y-%m-%d')
+                        date = date_obj.strftime('%d/%m/%Y')
+                        if date not in forecasts:
+                            forecasts[date] = []
+                        forecasts[date].append(entry)
+                    weather_data['forecasts'] = forecasts
+                else:
+                    flash('Error fetching weather data. Please try again.', 'danger')
+            else:
+                flash('Error detecting location. Please enter a city manually.', 'warning')
+        except Exception as e:
+            flash('Error detecting location. Please enter a city manually.', 'warning')
+    
+    elif request.method == 'POST':
         city = request.form.get('city')
         if not city:
             flash('Please enter a city name.', 'danger')
@@ -102,7 +143,8 @@ def weather():
                 weather_data = weather_response.json()
                 forecasts = {}
                 for entry in weather_data['list']:
-                    date = entry['dt_txt'].split(' ')[0]
+                    date_obj = datetime.strptime(entry['dt_txt'].split(' ')[0], '%Y-%m-%d')
+                    date = date_obj.strftime('%d/%m/%Y')
                     if date not in forecasts:
                         forecasts[date] = []
                     forecasts[date].append(entry)

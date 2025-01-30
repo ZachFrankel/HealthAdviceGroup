@@ -4,6 +4,13 @@
 <div class="container mt-5">
     <h1 class="mb-4" style="color: #3DA18C;">Weather Forecast</h1>
     
+    <div id="loading" class="text-center mb-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Detecting your location...</p>
+    </div>
+    
     <form method="POST" class="mb-4">
         <div class="input-group">
             <input type="text" name="city" class="form-control" placeholder="Enter city name" required>
@@ -12,7 +19,7 @@
     </form>
 
     {% if weather_data %}
-    <div class="card mb-4" style="border-color: #3DA18C;">
+    <div id="weather-data" class="card mb-4" style="border-color: #3DA18C;">
         <div class="card-body">
             <h2 class="card-title" style="color: #3DA18C;">
                 {{ weather_data.city.name }}, {{ weather_data.city.country }}
@@ -51,4 +58,20 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const weatherData = document.getElementById('weather-data');
+        const loading = document.getElementById('loading');
+        
+        if (weatherData) {
+            loading.style.display = 'none';
+        }
+        
+        // Hide loading after 5 seconds if weather data hasn't loaded
+        setTimeout(function() {
+            loading.style.display = 'none';
+        }, 5000);
+    });
+</script>
 {% endblock %}
