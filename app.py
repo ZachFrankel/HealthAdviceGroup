@@ -1,11 +1,13 @@
 import os
 import requests
 import sqlite3
+import google.generativeai as genai
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from dotenv import load_dotenv
 from flask_discord import DiscordOAuth2Session, Unauthorized
 from datetime import datetime
+from collections import defaultdict
 from auth import auth
 
 load_dotenv()
@@ -151,6 +153,45 @@ def weather():
                 weather_data['forecasts'] = forecasts
             else:
                 flash('Error fetching weather data. Please try again.', 'danger')
+
+    if weather_data and 'forecasts' in weather_data:
+        try:
+            GEMINI_API_KEY = os.getenv('GEMINI')
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            daily_health_advice = defaultdict(str)
+            for date, entries in weather_data['forecasts'].items():
+                mid_entry = entries[len(entries)//2]
+                
+                prompt = f"""Analyze these weather conditions and provide health recommendations:
+
+                Date: {date}
+                Temperature: {mid_entry['main']['temp']}°C
+                Feels like: {mid_entry['main']['feels_like']}°C
+                Humidity: {mid_entry['main']['humidity']}%
+                Weather: {mid_entry['weather'][0]['description']}
+                Wind Speed: {mid_entry['wind']['speed']} m/s
+                Pressure: {mid_entry['main']['pressure']} hPa
+
+                Provide 3 health recommendations in this exact format:
+                [emoji] [recommendation title]: [brief advice]
+
+                Example format:
+                🌡️ Temperature Safety: Stay hydrated and wear appropriate clothing
+                ☔ Weather Protection: Use umbrella and waterproof gear
+                🌬️ Wind Advisory: Secure loose items and protect against windchill
+
+                Keep each recommendation under 15 words.
+                Do not use asterisks or markdown formatting."""
+
+                response = model.generate_content(prompt)
+                daily_health_advice[date] = response.text.strip()
+            
+            weather_data['health_advice'] = daily_health_advice
+            
+        except Exception as e:
+            flash('Unable to generate health recommendations at this time.', 'warning')
     
     return render_template('weather.html', weather_data=weather_data)
 
