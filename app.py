@@ -2,13 +2,15 @@ import os
 import requests
 import sqlite3
 import google.generativeai as genai
+import json
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, g
+from flask import Flask, render_template, request, redirect, url_for, session, flash, g, jsonify
 from dotenv import load_dotenv
 from flask_discord import DiscordOAuth2Session, Unauthorized
 from datetime import datetime
 from collections import defaultdict
 from auth import auth
+from slowapi import ai_api
 
 load_dotenv()
 
@@ -25,6 +27,7 @@ app.config["DISCORD_BOT_TOKEN"] = os.getenv("TOKEN")
 
 discord = DiscordOAuth2Session(app)
 app.register_blueprint(auth)
+app.register_blueprint(ai_api, url_prefix='/api/ai')
 
 def get_db():
     if 'db' not in g:
@@ -153,47 +156,96 @@ def weather():
                 weather_data['forecasts'] = forecasts
             else:
                 flash('Error fetching weather data. Please try again.', 'danger')
-
-    if weather_data and 'forecasts' in weather_data:
-        try:
-            GEMINI_API_KEY = os.getenv('GEMINI')
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            daily_health_advice = defaultdict(str)
-            for date, entries in weather_data['forecasts'].items():
-                mid_entry = entries[len(entries)//2]
-                
-                prompt = f"""Analyze these weather conditions and provide health recommendations:
-
-                Date: {date}
-                Temperature: {mid_entry['main']['temp']}°C
-                Feels like: {mid_entry['main']['feels_like']}°C
-                Humidity: {mid_entry['main']['humidity']}%
-                Weather: {mid_entry['weather'][0]['description']}
-                Wind Speed: {mid_entry['wind']['speed']} m/s
-                Pressure: {mid_entry['main']['pressure']} hPa
-
-                Provide 3 health recommendations in this exact format:
-                [emoji] [recommendation title]: [brief advice]
-
-                Example format:
-                🌡️ Temperature Safety: Stay hydrated and wear appropriate clothing
-                ☔ Weather Protection: Use umbrella and waterproof gear
-                🌬️ Wind Advisory: Secure loose items and protect against windchill
-
-                Keep each recommendation under 15 words.
-                Do not use asterisks or markdown formatting."""
-
-                response = model.generate_content(prompt)
-                daily_health_advice[date] = response.text.strip()
-            
-            weather_data['health_advice'] = daily_health_advice
-            
-        except Exception as e:
-            flash('Unable to generate health recommendations at this time.', 'warning')
     
     return render_template('weather.html', weather_data=weather_data)
+
+@app.route('/get_health_advice', methods=['POST'])
+def get_health_advice():
+    weather_data = request.json.get('weather_data')
+    if not weather_data or 'forecasts' not in weather_data:
+        return jsonify({'error': 'Invalid weather data'}), 400
+
+    try:
+        date = request.json.get('date')
+        entries = weather_data['forecasts'].get(date, [])
+        if not entries:
+            return jsonify({'error': 'Invalid date'}), 400
+
+        mid_entry = entries[len(entries)//2]
+        
+        prompt = f"""Analyze these weather conditions and provide health recommendations:
+
+        Date: {date}
+        Temperature: {mid_entry['main']['temp']}°C
+        Feels like: {mid_entry['main']['feels_like']}°C
+        Humidity: {mid_entry['main']['humidity']}%
+        Weather: {mid_entry['weather'][0]['description']}
+        Wind Speed: {mid_entry['wind']['speed']} m/s
+        Pressure: {mid_entry['main']['pressure']} hPa
+
+        Provide 3 health recommendations in this exact format:
+        [emoji] [recommendation title]: [brief advice]
+
+        Example format:
+        🌡️ Temperature Safety: Stay hydrated and wear appropriate clothing
+        ☔ Weather Protection: Use umbrella and waterproof gear
+        🌬️ Wind Advisory: Secure loose items and protect against windchill
+
+        Keep each recommendation under 15 words."""
+
+        print(f"\n[DEBUG] Processing date: {date}")
+        print("[DEBUG] Sending prompt to Deepseek API:")
+        print(prompt)
+
+        response = requests.post(
+            'http://localhost:5000/api/ai/generate',
+            json={'prompt': prompt}
+        )
+        
+        print(f"[DEBUG] API Response Status: {response.status_code}")
+        print("[DEBUG] API Response:", response.text)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success'):
+                full_response = result['response'].strip()
+                
+                if '<think>' in full_response and '</think>' in full_response:
+                    think_start = full_response.find('<think>')
+                    think_end = full_response.find('</think>') + len('</think>')
+                    full_response = full_response[think_end:].strip()
+                
+                valid_lines = []
+                for line in full_response.split('\n'):
+                    line = line.strip()
+                    if line and ':' in line and any(c for c in line if ord(c) > 127):
+                        valid_lines.append(line)
+                
+                if valid_lines:
+                    advice = '\n'.join(valid_lines)
+                else:
+                    advice = "🌡️ Weather Notice: Please check back later for health recommendations"
+                    
+                print(f"\n[DEBUG] Processed advice for {date}:")
+                print(advice)
+                
+                return jsonify({
+                    'success': True,
+                    'date': date,
+                    'advice': advice
+                })
+            else:
+                error_msg = result.get('error', 'Unknown error occurred')
+                print(f"[DEBUG] API Error for {date}:", error_msg)
+                raise Exception(error_msg)
+        else:
+            error_msg = f'API call failed with status code {response.status_code}'
+            print(f"[DEBUG] HTTP Error for {date}:", error_msg)
+            raise Exception(error_msg)
+        
+    except Exception as e:
+        print("\n[DEBUG] Main Exception:", str(e))
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/booking', methods=['GET'])
 def booking():
@@ -260,4 +312,4 @@ def home():
     return render_template('home.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True, port=5000)
