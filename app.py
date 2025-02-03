@@ -3,6 +3,7 @@ import requests
 import sqlite3
 import google.generativeai as genai
 import json
+import httpx
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g, jsonify
 from dotenv import load_dotenv

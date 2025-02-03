@@ -7,6 +7,8 @@ from flask_discord import requires_authorization, Unauthorized, DiscordOAuth2Ses
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
+discord = None
+
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect('db.db')
@@ -19,14 +21,19 @@ def close_db(e=None):
         db.close()
 
 def init_discord(app):
-    global discord
+    """Initialize Discord OAuth2 settings"""
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
     app.config["DISCORD_CLIENT_ID"] = os.getenv("CLIENT_ID")
-    app.config["DISCORD_CLIENT_SECRET"] = os.getenv("SECRET")
+    app.config["DISCORD_CLIENT_SECRET"] = os.getenv("SECRET") 
     app.config["DISCORD_REDIRECT_URI"] = os.getenv("URI")
     app.config["DISCORD_BOT_TOKEN"] = os.getenv("TOKEN")
-    discord = DiscordOAuth2Session(app)
-    return discord
+    return DiscordOAuth2Session(app)
+
+@auth.record
+def record(state):
+    """Initialize discord client when blueprint is registered"""
+    global discord
+    discord = init_discord(state.app)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -93,11 +100,15 @@ def logout():
 
 @auth.route("/discord")
 def discord_login():
+    if discord is None:
+        flash('Discord authentication is not configured properly', 'danger')
+        return redirect(url_for('auth.login'))
     return discord.create_session(
         scope=["identify", "email"],
         prompt=True
     )
 
+@auth.route("/callback/")
 @auth.route("/callback")
 def callback():
     try:

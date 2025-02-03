@@ -17,7 +17,6 @@ def close_server_if_inactive():
     time.sleep(2) 
     with active_requests_lock:
         if active_requests == 0:
-            print("[DEBUG] Closing Ollama server - no active requests")
             if platform.system() == "Windows":
                 subprocess.run(['taskkill', '/F', '/IM', 'ollama_llama_server.exe'], 
                              stdout=subprocess.DEVNULL, 
@@ -34,7 +33,6 @@ def generate_response():
     try:
         with active_requests_lock:
             active_requests += 1
-        print(f"[DEBUG] Active requests: {active_requests}")
         
         data = request.get_json()
         if not data or 'prompt' not in data:
@@ -44,7 +42,7 @@ def generate_response():
         
         message = ""
         for chunk in client.generate(
-            model='deepseek-r1:7b',
+            model='deepseek-r1:1.5b',
             prompt=prompt,
             stream=True
         ):
@@ -62,7 +60,6 @@ def generate_response():
             if active_requests == 0:
                 threading.Thread(target=close_server_if_inactive).start()
                 
-        print(f"[DEBUG] Request complete. Remaining active requests: {active_requests}")
         return jsonify(response)
 
     except Exception as e:
