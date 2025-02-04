@@ -1,3 +1,7 @@
+# slowapi.py
+# Handles requests sent to our AI API endpoint using the Ollama client.
+# Responsible for generating AI responses from provided prompts and managing server activity.
+
 from flask import Blueprint, request, jsonify
 from ollama import Client
 import subprocess
@@ -5,8 +9,9 @@ import platform
 import threading
 import time
 
+# Blueprint for AI-related endpoints.
 ai_api = Blueprint('ai_api', __name__)
-client = Client(host='http://localhost:11434')
+client = Client(host='http://localhost:11434')  # Ollama generative AI client
 
 active_requests = 0
 active_requests_lock = threading.Lock()
@@ -58,6 +63,7 @@ def generate_response():
         with active_requests_lock:
             active_requests -= 1
             if active_requests == 0:
+                # Start background thread to shutdown the server if inactive.
                 threading.Thread(target=close_server_if_inactive).start()
                 
         return jsonify(response)

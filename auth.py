@@ -1,3 +1,7 @@
+# auth.py
+# This module handles user authentication including registration, login, logout,
+# and integration with Discord OAuth2.
+
 import os
 import sqlite3
 
@@ -5,17 +9,20 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_discord import requires_authorization, Unauthorized, DiscordOAuth2Session
 
+# Define a blueprint for all routes starting with /auth
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
-discord = None
+discord = None  # Will store the Discord OAuth2 session instance
 
 def get_db():
+    # Create or get an existing database connection.
     if 'db' not in g:
         g.db = sqlite3.connect('db.db')
         g.db.row_factory = sqlite3.Row
     return g.db
 
 def close_db(e=None):
+    # Close the database connection at the end of the request.
     db = g.pop('db', None)
     if db is not None:
         db.close()
@@ -31,12 +38,13 @@ def init_discord(app):
 
 @auth.record
 def record(state):
-    """Initialize discord client when blueprint is registered"""
+    # When the blueprint is registered, initialize the Discord OAuth2 client.
     global discord
     discord = init_discord(state.app)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
+    # Process login form submissions and validate user credentials
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -62,6 +70,7 @@ def login():
 
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
+    # Handle new user registration by validating input and adding a record to the database
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
@@ -94,12 +103,14 @@ def register():
 
 @auth.route('/logout')
 def logout():
+    # Clear the session to log the user out.
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
 @auth.route("/discord")
 def discord_login():
+    # Redirect the user to Discord for OAuth2 authentication.
     if discord is None:
         flash('Discord authentication is not configured properly', 'danger')
         return redirect(url_for('auth.login'))
@@ -111,6 +122,7 @@ def discord_login():
 @auth.route("/callback/")
 @auth.route("/callback")
 def callback():
+    # Process the OAuth2 callback from Discord.
     try:
         discord.callback()
         user = discord.fetch_user()
