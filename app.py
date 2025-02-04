@@ -1,18 +1,18 @@
+# app.py
+# Main application file for the Flask app.
+# It sets up routes for weather, air quality, bookings, health metrics, and more.
+
 import os
 import requests
 import sqlite3
-import google.generativeai as genai
-import json
-import httpx
-import re
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g, jsonify
 from dotenv import load_dotenv
 from flask_discord import DiscordOAuth2Session, Unauthorized
 from datetime import datetime
 from collections import defaultdict
-from auth import auth
-from slowapi import ai_api
+from auth import auth  # Authentication blueprint for login, registration, etc.
+from slowapi import ai_api  # Blueprint for AI responses
 
 load_dotenv()
 
@@ -20,8 +20,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 OPENWEATHERMAP_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
 
-# Discord OAuth2 Configuration
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"  # Only in development
+# Configure Discord OAuth2 settings (development mode using insecure transport)
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true" 
 app.config["DISCORD_CLIENT_ID"] = os.getenv("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = os.getenv("SECRET")
 app.config["DISCORD_REDIRECT_URI"] = os.getenv("URI")
@@ -31,12 +31,14 @@ discord = DiscordOAuth2Session(app)
 app.register_blueprint(auth)
 app.register_blueprint(ai_api, url_prefix='/api/ai')
 
+# Utility function to get or create a database connection for the request context.
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect('db.db')
         g.db.row_factory = sqlite3.Row
     return g.db
 
+# Helper function to extract user information.
 def get_user_info():
     if 'user_id' not in session:
         return None
@@ -63,14 +65,19 @@ def get_user_info():
 
 @app.context_processor
 def utility_processor():
+    # Make get_user_info available in all templates.
     return dict(get_user_info=get_user_info)
 
 @app.errorhandler(Unauthorized)
 def redirect_unauthorized(e):
+    # Redirect unauthorized users to the login page.
     return redirect(url_for("auth.login"))
 
 @app.route('/weather', methods=['GET', 'POST'])
 def weather():
+    # Fetch and display weather information.
+    # The route fetches location, gathers weather data from OpenWeatherMap,
+    # and handles both GET (auto-detect location) and POST (manual city input) requests.
     weather_data = None
     
     if request.method == 'GET':
@@ -170,6 +177,8 @@ def weather():
 
 @app.route('/get_health_advice', methods=['POST'])
 def get_health_advice():
+    # Process weather data to generate health advice using AI.
+    # This route extracts data from the posted JSON, constructs a prompt, and calls the AI API.
     weather_data = request.json.get('weather_data')
     if not weather_data or 'forecasts' not in weather_data:
         return jsonify({'error': 'Invalid weather data'}), 400
@@ -244,6 +253,7 @@ def get_health_advice():
 
 @app.route('/booking', methods=['GET'])
 def booking():
+    # Retrieve and display the user's bookings.
     if 'user_id' in session:
         db = get_db()
         bookings = db.execute('''
@@ -262,6 +272,7 @@ def booking():
 
 @app.route('/create_booking', methods=['POST'])
 def create_booking():
+    # Create a new booking after validating form inputs.
     if 'user_id' not in session:
         flash('Please login to create a booking.', 'danger')
         return redirect(url_for('auth.login'))
@@ -288,6 +299,7 @@ def create_booking():
 
 @app.route('/clear_booking/<int:booking_id>', methods=['POST'])
 def clear_booking(booking_id):
+    # Handle deletion of a booking; ensure the user is authenticated and handle errors.
     if 'user_id' not in session:
         flash('Please login to clear a booking.', 'danger')
         return redirect(url_for('auth.login'))
@@ -307,6 +319,8 @@ def clear_booking(booking_id):
 
 @app.route('/airquality', methods=['GET', 'POST'])
 def airquality():
+    # Fetch air quality data via external API and render the results.
+    # Supports both auto-detection via IP and manual city input.
     air_quality_data = None
     if request.method == 'GET':
         ipify_api_key = os.getenv('IPIFY_API_KEY')
@@ -386,6 +400,7 @@ def info():
 
 @app.route('/health/', methods=['GET', 'POST'])
 def health():
+    # Display and record user health metrics (e.g., weight, blood pressure).
     if 'user_id' not in session:
         flash('Please login to track your health metrics.', 'danger')
         return redirect(url_for('auth.login'))
@@ -393,6 +408,7 @@ def health():
     db = get_db()
 
     if request.method == 'POST' and 'weight' in request.form:
+        # Insert the new health metric record.
         weight = request.form.get('weight')
         blood_pressure = request.form.get('blood_pressure')
         heart_rate = request.form.get('heart_rate')
@@ -411,6 +427,7 @@ def health():
                 flash('Error recording health metrics.', 'danger')
         return redirect(url_for('health'))
 
+    # Retrieve existing health metric entries.
     raw_metrics = db.execute(
         'SELECT * FROM health_metrics WHERE user_id = ? ORDER BY date DESC',
         (session['user_id'],)
@@ -421,6 +438,7 @@ def health():
 
 @app.route('/remove_health_entry/<int:entry_id>', methods=['POST'])
 def remove_health_entry(entry_id):
+    # Delete the specified health metric entry from the database.
     if 'user_id' not in session:
         flash('Please login to remove a health entry.', 'danger')
         return redirect(url_for('auth.login'))
@@ -438,6 +456,8 @@ def remove_health_entry(entry_id):
 
 @app.route('/update_user_details', methods=['POST'])
 def update_user_details():
+    # Update the user's personal details (age, weight, height) in the database.
+    # Validate inputs and return a JSON response with the updated data.
     if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Please login to update your details.'}), 401
         
