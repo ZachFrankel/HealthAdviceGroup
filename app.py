@@ -194,17 +194,10 @@ def get_health_advice():
 
         Keep each recommendation under 15 words."""
 
-        print(f"\n[DEBUG] Processing date: {date}")
-        print("[DEBUG] Sending prompt to Deepseek API:")
-        print(prompt)
-
         response = requests.post(
             'http://localhost:5000/api/ai/generate',
             json={'prompt': prompt}
         )
-        
-        print(f"[DEBUG] API Response Status: {response.status_code}")
-        print("[DEBUG] API Response:", response.text)
         
         if response.status_code == 200:
             result = response.json()
@@ -226,9 +219,6 @@ def get_health_advice():
                     advice = '\n'.join(valid_lines)
                 else:
                     advice = "🌡️ Weather Notice: Please check back later for health recommendations"
-                    
-                print(f"\n[DEBUG] Processed advice for {date}:")
-                print(advice)
                 
                 return jsonify({
                     'success': True,
@@ -236,13 +226,9 @@ def get_health_advice():
                     'advice': advice
                 })
             else:
-                error_msg = result.get('error', 'Unknown error occurred')
-                print(f"[DEBUG] API Error for {date}:", error_msg)
-                raise Exception(error_msg)
+                raise Exception
         else:
-            error_msg = f'API call failed with status code {response.status_code}'
-            print(f"[DEBUG] HTTP Error for {date}:", error_msg)
-            raise Exception(error_msg)
+            raise Exception
         
     except Exception as e:
         print("\n[DEBUG] Main Exception:", str(e))
@@ -252,10 +238,17 @@ def get_health_advice():
 def booking():
     if 'user_id' in session:
         db = get_db()
-        bookings = db.execute(
-            'SELECT * FROM bookings WHERE user_id = ? ORDER BY date DESC',
-            (session['user_id'],)
-        ).fetchall()
+        bookings = db.execute('''
+            SELECT 
+                id,
+                strftime('%d/%m/%Y %H:%M', date) as date,
+                address,
+                strftime('%d/%m/%Y %H:%M', created_at) as created_at,
+                status
+            FROM bookings 
+            WHERE user_id = ? 
+            ORDER BY date DESC
+        ''', (session['user_id'],)).fetchall()
         return render_template('booking.html', bookings=bookings)
     return render_template('booking.html', bookings=None)
 
@@ -285,22 +278,22 @@ def create_booking():
     
     return redirect(url_for('booking'))
 
-@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
-def cancel_booking(booking_id):
+@app.route('/clear_booking/<int:booking_id>', methods=['POST'])
+def clear_booking(booking_id):
     if 'user_id' not in session:
-        flash('Please login to cancel a booking.', 'danger')
+        flash('Please login to clear a booking.', 'danger')
         return redirect(url_for('auth.login'))
     
     try:
         db = get_db()
         db.execute(
-            'UPDATE bookings SET status = ? WHERE id = ? AND user_id = ?',
-            ('cancelled', booking_id, session['user_id'])
+            'DELETE FROM bookings WHERE id = ? AND user_id = ?',
+            (booking_id, session['user_id'])
         )
         db.commit()
-        flash('Booking cancelled successfully!', 'success')
+        flash('Booking cleared successfully!', 'success')
     except sqlite3.Error as e:
-        flash('An error occurred while cancelling your booking.', 'danger')
+        flash('An error occurred while clearing your booking.', 'danger')
     
     return redirect(url_for('booking'))
 
