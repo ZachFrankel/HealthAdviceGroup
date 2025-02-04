@@ -4,6 +4,7 @@ import sqlite3
 import google.generativeai as genai
 import json
 import httpx
+import re
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g, jsonify
 from dotenv import load_dotenv
@@ -40,17 +41,24 @@ def get_user_info():
     if 'user_id' not in session:
         return None
     
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    
     if 'discord_user' in session:
         return {
             'name': session['discord_user']['name'],
-            'avatar': session['discord_user']['avatar_url']
+            'avatar': session['discord_user']['avatar_url'],
+            'age': user['age'] if user else None,
+            'weight': user['weight'] if user else None,
+            'height': user['height'] if user else None
         }
     
-    db = get_db()
-    user = db.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
     return {
         'name': user['name'] if user else 'User',
-        'avatar': url_for('static', filename='images/default.png')
+        'avatar': url_for('static', filename='images/default.png'),
+        'age': user['age'] if user else None,
+        'weight': user['weight'] if user else None,
+        'height': user['height'] if user else None
     }
 
 @app.context_processor
@@ -375,6 +383,98 @@ def airquality():
 @app.route('/info')
 def info():
     return render_template('info.html')
+
+@app.route('/health/', methods=['GET', 'POST'])
+def health():
+    if 'user_id' not in session:
+        flash('Please login to track your health metrics.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    db = get_db()
+
+    if request.method == 'POST' and 'weight' in request.form:
+        weight = request.form.get('weight')
+        blood_pressure = request.form.get('blood_pressure')
+        heart_rate = request.form.get('heart_rate')
+        notes = request.form.get('notes')
+        if not weight or not blood_pressure or not heart_rate:
+            flash('Please fill in all required fields.', 'danger')
+        else:
+            try:
+                db.execute(
+                    'INSERT INTO health_metrics (user_id, date, weight, blood_pressure, heart_rate, notes) VALUES (?, datetime("now", "localtime"), ?, ?, ?, ?)',
+                    (session['user_id'], weight, blood_pressure, heart_rate, notes)
+                )
+                db.commit()
+                flash('Health metrics recorded successfully!', 'success')
+            except Exception as e:
+                flash('Error recording health metrics.', 'danger')
+        return redirect(url_for('health'))
+
+    raw_metrics = db.execute(
+        'SELECT * FROM health_metrics WHERE user_id = ? ORDER BY date DESC',
+        (session['user_id'],)
+    ).fetchall()
+    metrics = [dict(row) for row in raw_metrics]
+
+    return render_template('health.html', metrics=metrics)
+
+@app.route('/remove_health_entry/<int:entry_id>', methods=['POST'])
+def remove_health_entry(entry_id):
+    if 'user_id' not in session:
+        flash('Please login to remove a health entry.', 'danger')
+        return redirect(url_for('auth.login'))
+    db = get_db()
+    try:
+        db.execute(
+            'DELETE FROM health_metrics WHERE id = ? AND user_id = ?',
+            (entry_id, session['user_id'])
+        )
+        db.commit()
+        flash('Health entry removed successfully!', 'success')
+    except Exception as e:
+        flash('Error removing health entry.', 'danger')
+    return redirect(url_for('health'))
+
+@app.route('/update_user_details', methods=['POST'])
+def update_user_details():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Please login to update your details.'}), 401
+        
+    age = request.form.get('age')
+    weight = request.form.get('weight')
+    height = request.form.get('height')
+
+    # Validate inputs
+    if age and not age.isdigit():
+        return jsonify({'success': False, 'error': 'Age must be a number.'}), 400
+        
+    if weight and not (weight.replace('.', '').isdigit()):
+        return jsonify({'success': False, 'error': 'Weight must be a number.'}), 400
+        
+    if height and not height.isdigit():
+        return jsonify({'success': False, 'error': 'Height must be a number.'}), 400
+
+    db = get_db()
+    try:
+        db.execute(
+            'UPDATE users SET age = ?, weight = ?, height = ? WHERE id = ?',
+            (age or None, weight or None, height or None, session['user_id'])
+        )
+        db.commit()
+        
+        # Get updated user info
+        user = db.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        return jsonify({
+            'success': True,
+            'user': {
+                'age': user['age'],
+                'weight': user['weight'],
+                'height': user['height']
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Error updating details.'}), 500
 
 @app.route('/')
 def home():
