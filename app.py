@@ -297,6 +297,81 @@ def clear_booking(booking_id):
     
     return redirect(url_for('booking'))
 
+@app.route('/airquality', methods=['GET', 'POST'])
+def airquality():
+    air_quality_data = None
+    if request.method == 'GET':
+        ipify_api_key = os.getenv('IPIFY_API_KEY')
+        try:
+            ip_response = requests.get(
+                "https://geo.ipify.org/api/v2/country,city",
+                params={'apiKey': ipify_api_key}
+            )
+            if ip_response.status_code == 200:
+                location_data = ip_response.json()
+                lat = location_data['location']['lat']
+                lon = location_data['location']['lng']
+                air_params = {
+                    'lat': lat,
+                    'lon': lon,
+                    'appid': OPENWEATHERMAP_API_KEY
+                }
+                air_response = requests.get("http://api.openweathermap.org/data/2.5/air_pollution", params=air_params)
+                if air_response.status_code == 200:
+                    air_json = air_response.json()
+                    if 'list' in air_json and len(air_json['list']) > 0:
+                        air_quality_data = {
+                            'city': location_data['location'].get('city', 'Your Location'),
+                            'country': location_data['location'].get('country', ''),
+                            'data': air_json['list'][0]
+                        }
+                    else:
+                        flash('No air quality data available for your location.', 'warning')
+                else:
+                    flash('Error fetching air quality data.', 'danger')
+            else:
+                flash('Error detecting your location.', 'warning')
+        except Exception as e:
+            flash('Error detecting your location. Please try again.', 'danger')
+    
+    elif request.method == 'POST':
+        city = request.form.get('city')
+        if not city:
+            flash('Please enter a city name.', 'danger')
+            return redirect(url_for('airquality'))
+        geo_params = {
+            'q': city,
+            'limit': 1,
+            'appid': OPENWEATHERMAP_API_KEY
+        }
+        geo_response = requests.get("http://api.openweathermap.org/geo/1.0/direct", params=geo_params)
+        if geo_response.status_code != 200 or not geo_response.json():
+            flash('City not found or error connecting to geocoding service.', 'danger')
+            return redirect(url_for('airquality'))
+        geo_data = geo_response.json()[0]
+        lat = geo_data['lat']
+        lon = geo_data['lon']
+        air_params = {
+            'lat': lat,
+            'lon': lon,
+            'appid': OPENWEATHERMAP_API_KEY
+        }
+        air_response = requests.get("http://api.openweathermap.org/data/2.5/air_pollution", params=air_params)
+        if air_response.status_code != 200:
+            flash('Error fetching air quality data.', 'danger')
+            return redirect(url_for('airquality'))
+        air_json = air_response.json()
+        if 'list' in air_json and len(air_json['list']) > 0:
+            air_quality_data = {
+                'city': geo_data.get('name', city),
+                'country': geo_data.get('country', ''),
+                'data': air_json['list'][0]
+            }
+        else:
+            flash('No air quality data available for this location.', 'warning')
+    
+    return render_template('airquality.html', air_quality_data=air_quality_data)
+
 @app.route('/info')
 def info():
     return render_template('info.html')

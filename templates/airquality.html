@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Air Quality{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4" style="color: #3DA18C;">Air Quality</h1>
+    
+    <form method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="city" class="form-control" placeholder="Enter city name" required>
+            <button type="submit" class="btn" style="background-color: #3DA18C; color: white;">Search</button>
+        </div>
+    </form>
+    
+    {% if air_quality_data %}
+    <div class="card mb-4 shadow-sm" style="border-color: #3DA18C;">
+        <div class="card-header bg-white">
+            <h2 class="h4 mb-0" style="color: #3DA18C;">Air Quality for {{ air_quality_data.city }}, {{ air_quality_data.country }}</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                <strong>AQI:</strong> {{ air_quality_data.data.main.aqi }} –
+                {% if air_quality_data.data.main.aqi == 1 %}
+                    Good
+                {% elif air_quality_data.data.main.aqi == 2 %}
+                    Fair
+                {% elif air_quality_data.data.main.aqi == 3 %}
+                    Moderate
+                {% elif air_quality_data.data.main.aqi == 4 %}
+                    Poor
+                {% else %}
+                    Very Poor
+                {% endif %}
+            </p>
+            <h5>Components (μg/m³):</h5>
+            <ul>
+                <li>CO: {{ air_quality_data.data.components.co }}</li>
+                <li>NO: {{ air_quality_data.data.components.no }}</li>
+                <li>NO₂: {{ air_quality_data.data.components.no2 }}</li>
+                <li>O₃: {{ air_quality_data.data.components.o3 }}</li>
+                <li>SO₂: {{ air_quality_data.data.components.so2 }}</li>
+                <li>PM2.5: {{ air_quality_data.data.components.pm2_5 }}</li>
+                <li>PM10: {{ air_quality_data.data.components.pm10 }}</li>
+                <li>NH₃: {{ air_quality_data.data.components.nh3 }}</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="card mb-4 shadow-sm" style="border-color: #3DA18C;">
+        <div class="card-header bg-white">
+            <h2 class="h4 mb-0" style="color: #3DA18C;">AI Summary</h2>
+        </div>
+        <div class="card-body">
+            <div id="ai-summary-content" class="loading-placeholder">
+                <div class="spinner-border spinner-border-sm text-secondary me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Generating AI Summary...
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if air_quality_data %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const summaryElement = document.getElementById('ai-summary-content');
+        const prompt = `Provide a brief plain-language summary of the air quality. 
+    City: {{ air_quality_data.city }}, Country: {{ air_quality_data.country }}.
+    AQI: {{ air_quality_data.data.main.aqi }}.
+    Components: CO: {{ air_quality_data.data.components.co }}, NO: {{ air_quality_data.data.components.no }}, 
+    NO₂: {{ air_quality_data.data.components.no2 }}, O₃: {{ air_quality_data.data.components.o3 }}, 
+    SO₂: {{ air_quality_data.data.components.so2 }}, PM2.5: {{ air_quality_data.data.components.pm2_5 }}, 
+    PM10: {{ air_quality_data.data.components.pm10 }}, NH₃: {{ air_quality_data.data.components.nh3 }}.`;
+
+        fetch('/api/ai/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const cleaned = data.response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                summaryElement.innerText = cleaned;
+            } else {
+                summaryElement.innerText = "Error generating AI summary.";
+            }
+        })
+        .catch(err => {
+            summaryElement.innerText = "Error generating AI summary.";
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
