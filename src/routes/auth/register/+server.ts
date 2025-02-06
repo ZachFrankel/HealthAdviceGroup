@@ -2,7 +2,7 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 
 export async function POST({ request }: RequestEvent) {
-    const { email, password } = await request.json();
+    const { fullName, email, password } = await request.json();
 
     return new Promise((resolve) => {
         db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
@@ -11,8 +11,8 @@ export async function POST({ request }: RequestEvent) {
                 return;
             }
 
-            db.run('INSERT INTO users (email, password) VALUES (?, ?)', 
-                [email, password],
+            db.run('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', 
+                [fullName, email, password],
                 (err) => {
                     if (err) {
                         resolve(json({ error: 'Registration failed' }, { status: 500 }));

@@ -1,4 +1,5 @@
 <script lang="ts">
+    let fullName = '';
     let email = '';
     let password = '';
     let confirmPassword = '';
@@ -14,7 +15,7 @@
         const response = await fetch('/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ fullName, email, password })
         });
 
         if (response.ok) {
@@ -36,6 +37,16 @@
             {/if}
 
             <form class="space-y-4" onsubmit={handleSubmit}>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input
+                        type="text"
+                        id="fullName"
+                        bind:value={fullName}
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                </div>
+
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                     <input
