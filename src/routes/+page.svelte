@@ -28,7 +28,7 @@
                     <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div class="flex-grow">
-                    <h3 class="mb-4 text-2xl font-bold">Expert Advice</h3>
+                    <h3 class="mb-4 text-2xl font-bold">Advice</h3>
                     <p class="mb-4 text-gray-600">Access personalised health recommendations.</p>
                 </div>
                 <a href="/advice" class="mt-auto font-semibold text-green-600 hover:underline">Get Advice →</a>
