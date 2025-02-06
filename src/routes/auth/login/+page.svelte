@@ -1,6 +1,24 @@
 <script lang="ts">
     let email = '';
     let password = '';
+    let error = '';
+
+    async function handleSubmit(e: SubmitEvent) {
+        e.preventDefault();
+        
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+            window.location.href = '/';
+        } else {
+            const data = await response.json();
+            error = data.error;
+        }
+    }
 </script>
 
 <main class="min-h-screen bg-gray-50">
@@ -8,7 +26,11 @@
         <div class="rounded-2xl bg-white p-8 shadow-lg">
             <h1 class="mb-6 text-3xl font-bold text-gray-800">Login</h1>
 
-            <form class="space-y-4">
+            {#if error}
+                <div class="mb-4 rounded bg-red-100 p-3 text-red-700">{error}</div>
+            {/if}
+
+            <form class="space-y-4" onsubmit={handleSubmit}>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                     <input
