@@ -1,5 +1,13 @@
 <script lang="ts">
-    let fullName = '';
+    interface User {
+        name: string;
+        email: string;
+        password: string;
+    }
+
+    export let data: { user: User };
+    const { user } = data;
+
     let address = '';
     let selectedDate = '';
     let selectedTime = '';
@@ -36,9 +44,9 @@
                     <input
                         type="text"
                         id="fullName"
-                        bind:value={fullName}
-                        class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="John Smith"
+                        value={user.name}
+                        disabled
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
                     />
                 </div>
 
