@@ -1,5 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import bcrypt from 'bcrypt';
 
 interface UserRow {
     id: number;
@@ -11,10 +12,16 @@ export async function POST({ request, cookies }: RequestEvent) {
     const { email, password } = await request.json();
 
     return new Promise((resolve) => {
-        db.get('SELECT * FROM users WHERE email = ? AND password = ?', 
-            [email, password],
-            (err, row: UserRow) => {
+        db.get('SELECT * FROM users WHERE email = ?', 
+            [email],
+            async (err, row: UserRow) => {
                 if (err || !row) {
+                    resolve(json({ error: 'Invalid credentials' }, { status: 401 }));
+                    return;
+                }
+
+                const match = await bcrypt.compare(password, row.password);
+                if (!match) {
                     resolve(json({ error: 'Invalid credentials' }, { status: 401 }));
                     return;
                 }
