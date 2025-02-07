@@ -17,6 +17,7 @@ db.serialize(() => {
     address TEXT NOT NULL,
     date DATE NOT NULL,
     time TIME NOT NULL,
+    status TEXT NOT NULL,
     FOREIGN KEY (name) REFERENCES users(name),
     FOREIGN KEY (email) REFERENCES users(email)
   )`);
