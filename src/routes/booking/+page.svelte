@@ -11,6 +11,7 @@
     let address = '';
     let selectedDate = '';
     let selectedTime = '';
+    let error = '';
 
     const availableSlots: { [key: string]: string[] } = {
         "01/02/2024": ["09:00", "10:00", "14:00", "15:00"],
@@ -23,6 +24,34 @@
     function handleDateChange() {
         availableTimes = selectedDate ? availableSlots[selectedDate] : [];
         selectedTime = '';
+    }
+
+    async function handleSubmit(e: SubmitEvent) {
+        e.preventDefault();
+        
+        if (!address || !selectedDate || !selectedTime) {
+            error = 'Please fill in all fields';
+            return;
+        }
+
+        const response = await fetch('/booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: user.name,
+                email: user.email,
+                address,
+                date: selectedDate,
+                time: selectedTime
+            })
+        });
+
+        if (response.ok) {
+            return;
+        } else {
+            const data = await response.json();
+            error = data.error;
+        }
     }
 </script>
 
@@ -38,7 +67,7 @@
         <div class="rounded-2xl bg-white p-8 shadow-lg">
             <h1 class="mb-6 text-3xl font-bold text-gray-800">Book Risk Assessment</h1>
 
-            <form class="space-y-4">
+            <form class="space-y-4" onsubmit={handleSubmit}>
                 <div>
                     <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
                     <input

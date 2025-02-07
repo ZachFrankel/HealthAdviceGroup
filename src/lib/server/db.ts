@@ -9,6 +9,17 @@ db.serialize(() => {
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL
   )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    address TEXT NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    FOREIGN KEY (name) REFERENCES users(name),
+    FOREIGN KEY (email) REFERENCES users(email)
+  )`);
 });
 
 export { db };
