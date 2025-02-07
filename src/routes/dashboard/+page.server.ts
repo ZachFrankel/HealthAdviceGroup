@@ -14,9 +14,9 @@ export const load: PageServerLoad = async (event) => {
         throw redirect(302, '/auth/login');
     }
 
-    const bookings = await new Promise((resolve) => {
+    const healthData = await new Promise((resolve) => {
         db.all(
-            'SELECT * FROM bookings WHERE email = ? ORDER BY date DESC',
+            'SELECT * FROM health_data WHERE email = ? ORDER BY date DESC',
             [user.email],
             (err, rows) => {
                 if (err) resolve([]);
@@ -25,5 +25,5 @@ export const load: PageServerLoad = async (event) => {
         );
     });
 
-    return { user, bookings };
+    return { user, healthData };
 };
