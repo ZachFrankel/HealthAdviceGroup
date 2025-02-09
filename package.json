@@ -39,6 +39,8 @@
 	},
 	"dependencies": {
 		"@google/generative-ai": "^0.21.0",
+		"@types/bcrypt": "^5.0.2",
+		"bcrypt": "^5.1.1",
 		"better-sqlite3": "^11.8.1",
 		"sqlite3": "^5.1.7"
 	}
