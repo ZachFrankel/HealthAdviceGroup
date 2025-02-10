@@ -36,7 +36,7 @@
                     <a href="/dashboard" class="px-3 py-2 text-gray-700 hover:text-blue-600 {$page.url.pathname === '/dashboard' ? 'border-b-2 border-blue-600' : ''}">Dashboard</a>
                     <button on:click={handleLogout} class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">Logout</button>
                 {:else}
-                    <a href="/auth/login" class="px-3 py-2 text-gray-700 hover:text-blue-600">Login</a>
+                    <a href="/auth/login" class="px-3 py-2 text-gray-700 hover:text-blue-600 {$page.url.pathname === '/auth/login' ? 'border-b-2 border-blue-600' : ''}">Login</a>
                     <a href="/auth/register" class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">Register</a>
                 {/if}
             </div>
