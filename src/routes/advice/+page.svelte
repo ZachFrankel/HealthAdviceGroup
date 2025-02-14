@@ -8,22 +8,21 @@
 
     async function getAdvice() {
         loading = true;
-        error = '';
-        let prompt = `${query}, do not respond with markdown.`
         try {
-            const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-            if (!query.trim()) {
-                throw new Error('Please enter a query');
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: query })
+            });
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
             }
-
-            const response = await model.generateContent(prompt);
-            const text = response.response.text();
-            result = text;
-        } catch (err: any) {
-            error = err.message || 'An error occurred';
-            result = null;
+            loading = data.response;
+        } catch (error) {
+            result = 'Sorry, something went wrong. Please try again.';
         } finally {
             loading = false;
         }
