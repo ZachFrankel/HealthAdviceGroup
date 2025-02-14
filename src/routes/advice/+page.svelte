@@ -20,7 +20,7 @@
             if (data.error) {
                 throw new Error(data.error);
             }
-            loading = data.response;
+            result = data.response;
         } catch (error) {
             result = 'Sorry, something went wrong. Please try again.';
         } finally {
